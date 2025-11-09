@@ -1,0 +1,1988 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minijuego: Te amo Tomás</title>
+    
+    <style>
+        /*
+        ========================================
+        CSS (ESTILOS)
+        ========================================
+        */
+        :root {
+            /* Colores Base */
+            --color-principal: #e91e63; /* Rosa fuerte */
+            --color-fondo: #fce4ec; /* Rosa muy claro */
+            --color-acierto: #4CAF50; /* Verde */
+            --color-error: #F44336; /* Rojo */
+            --color-secundario: #9c27b0; /* Violeta */
+        }
+        
+        body {
+            font-family: 'Times New Roman', Times, serif; /* Tipografía Requerida */
+            background: linear-gradient(135deg, var(--color-fondo) 0%, #f48fb1 100%);
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        #juego-contenedor {
+            background-color: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+            max-width: 800px;
+            width: 100%;
+            text-align: center;
+            min-height: 500px;
+            position: relative;
+        }
+
+        #barra-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--color-principal);
+        }
+
+        #contador-corazones {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: var(--color-principal);
+        }
+
+        #titulo-nivel {
+            color: var(--color-secundario);
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        /* --- Estilos Comunes de Botones --- */
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.1s;
+            font-family: 'Times New Roman', Times, serif;
+            font-weight: bold;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        #boton-siguiente {
+            background-color: var(--color-acierto);
+            color: white;
+            margin-top: 25px;
+            width: 100%;
+            max-width: 300px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* --- MENSAJES FLOTANTES (Feedback Dinámico) --- */
+        .feedback-flotante {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 10px 20px;
+            background-color: #ffcdd2;
+            color: #d32f2f;
+            border-radius: 10px;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            z-index: 100;
+            animation: flotar 3s ease-out forwards;
+            pointer-events: none;
+        }
+
+        @keyframes flotar {
+            0% { opacity: 0; transform: translate(-50%, 0); }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { opacity: 0; transform: translate(-50%, -100px); }
+        }
+
+        /* --- Nivel 1 (QUIZ) --- */
+        .opcion-boton {
+            background-color: #ff80ab;
+            color: white;
+            text-align: left;
+            margin-bottom: 10px;
+            width: 100%;
+        }
+
+        .opcion-boton.incorrecta { background-color: var(--color-error); }
+        .opcion-boton.correcta { background-color: var(--color-acierto); }
+        #texto-historia { text-align: justify; line-height: 1.6; margin-bottom: 25px; border-left: 3px solid #ff4081; padding-left: 15px; }
+        #imagen-simulada { 
+    height: 400px; 
+    margin: 15px 0; 
+    background-color: #f3e5f5; 
+    border-radius: 8px; 
+    /* --- CAMBIOS AQUÍ --- */
+    background-size: contain; /* Ajusta la imagen completa sin recortar */
+    background-repeat: no-repeat; /* Evita que la imagen se repita */
+    /* -------------------- */
+    background-position: center; 
+    display: flex; justify-content: center; align-items: center; 
+    color: #6a1b9a; font-style: italic;
+}
+
+        /* --- Nivel 2 (MINECRAFT) --- */
+        #minecraft-canvas { 
+            display: grid; grid-template-columns: repeat(12, 1fr); grid-template-rows: repeat(8, 1fr); 
+            width: 90%; max-width: 600px; aspect-ratio: 3/2; margin: 20px auto;
+            border: 4px solid #795548; background-color: #8bc34a; image-rendering: pixelated; 
+        }
+        .block-celda { border: 1px solid rgba(0, 0, 0, 0.1); background-color: #8bc34a; }
+        .block-celda.tierra { background-color: #795548; }
+        .block-celda.piedra { background-color: #9e9e9e; }
+        .bloque-opcion { width: 40px; height: 40px; border: 3px solid transparent; cursor: pointer; }
+        .bloque-opcion.selected { border-color: var(--color-principal); }
+        #boton-figura-completa { background-color: #ff9800; color: white; }
+        #sorpresa-minecraft { display: none; }
+
+        /* --- Nivel 3 (SHOOTER) --- */
+        #shooter-area { position: relative; width: 600px; height: 350px; background: linear-gradient(to bottom right, #4b0082, #ff69b4); margin: 20px auto; border-radius: 10px; overflow: hidden; }
+        .enemigo-shooter { position: absolute; width: 40px; height: 40px; background-color: #333; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: crosshair; }
+        .enemigo-shooter::after { content: '❤️'; position: absolute; top: -10px; font-size: 0.8em; }
+        
+        /* --- Nivel 4 (CARD STRATEGY) - MODIFICADO */
+        #arena-batalla { display: flex; justify-content: space-between; align-items: center; background: linear-gradient(to right, #6a1b9a, #f06292); padding: 20px; border-radius: 10px; color: white; margin-bottom: 20px; }
+        .vida-jugador, .vida-rival { font-size: 2em; }
+        #cartas-jugador { display: flex; justify-content: center; gap: 10px; }
+        /* MODIFICADO: Estilo para la carta con imagen/icono */
+        .carta-amor { 
+            background-color: white; 
+            color: var(--color-principal); 
+            border: 2px solid var(--color-principal); 
+            padding: 10px; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            width: 100px; 
+            height: 120px; /* Aumentado para el espacio de la imagen */
+            display: flex; 
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            text-align: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .carta-imagen {
+            width: 60px;
+            height: 60px;
+            background-size: cover;
+            background-position: center;
+            border-radius: 5px;
+            margin-bottom: 5px;
+            font-size: 30px; /* Para el emoji/icono si no hay URL */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        /* FIN MODIFICACION CSS */
+        #log-batalla { background-color: #fff; color: #333; padding: 10px; border-radius: 5px; margin-top: 15px; min-height: 50px; text-align: left; }
+
+
+        /* --- Nivel 6 (VOLLEYBALL RHYTHM) --- */
+        #cancha-voleibol { background: linear-gradient(to bottom, #f48fb1, #9c27b0); height: 300px; position: relative; border-radius: 10px; display: flex; justify-content: center; align-items: center; }
+        #ball { position: absolute; width: 30px; height: 30px; background-color: white; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 1.2em; box-shadow: 0 0 10px #fff; }
+        #prompt-tecla { position: absolute; top: 10px; background-color: yellow; padding: 5px 10px; border-radius: 5px; display: none; }
+        
+        /* --- Nivel 7 (PENALTY KICK) --- */
+        #campo-futbol { width: 500px; height: 300px; background-color: #a5d6a7; border: 5px solid #66bb6a; margin: 20px auto; position: relative; }
+        #porteria { position: absolute; bottom: 0; width: 100%; height: 50px; border-top: 5px solid white; }
+        #jugador { position: absolute; bottom: 50px; width: 20px; height: 20px; background-color: #e91e63; border-radius: 50%; }
+        #balon { position: absolute; bottom: 50px; width: 15px; height: 15px; background-color: white; border-radius: 50%; }
+        
+        /* --- Nivel 8 (SHELL GAME) --- */
+        #shell-table { display: flex; justify-content: center; gap: 30px; margin-top: 30px; }
+        .shell { width: 80px; height: 80px; background-color: #9c27b0; border-radius: 10px 10px 0 0; cursor: pointer; display: flex; justify-content: center; align-items: flex-end; font-size: 2em; color: white; }
+
+        /* --- Nivel 9 (JIGSAW PUZZLE) --- */
+        #puzzle-area { 
+            display: grid; grid-template-columns: repeat(5, 1fr); width: 400px; height: 400px; margin: 20px auto; 
+            border: 2px solid var(--color-secundario); 
+            /* Imagen de fondo del puzzle (A REEMPLAZAR) */
+            background-image: url('URL_IMAGEN_ROMPECABEZAS'); 
+            background-size: 400px 400px;
+            position: relative;
+        }
+        .puzzle-piece { 
+            border: 1px dashed #ccc; background-color: #f8c8d880; /* semi-transparente para ver el fondo */
+            display: flex; justify-content: center; align-items: center; cursor: grab; 
+            /* Calcular la posición de fondo de cada pieza */
+            background-position: var(--bg-x) var(--bg-y);
+            background-image: url('URL_IMAGEN_ROMPECABEZAS');
+            background-size: 400px 400px;
+        }
+        .puzzle-piece.placed { 
+            background-color: transparent; 
+            border: 1px solid var(--color-acierto); 
+            cursor: default; 
+        }
+
+        /* --- Nivel 10 (MOVIE QUIZ) --- */
+        #quiz-movie-options button { background-color: #ffee58; color: #333; margin-top: 5px; }
+
+        /* --- Nivel 11 (MEMORY GAME) --- */
+        #memory-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; width: 500px; margin: 20px auto; }
+        .card { width: 80px; height: 80px; background-color: var(--color-secundario); border-radius: 10px; cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 0.5em; color: white; transition: transform 0.5s; transform-style: preserve-3d; }
+        .card.flipped { background-color: white; border: 2px solid var(--color-principal); color: var(--color-principal); transform: rotateY(180deg); }
+        .card-inner { transform: rotateY(180deg); }
+        .card.matched { background-color: var(--color-acierto); color: white; pointer-events: none; }
+        
+        /* --- Nivel 12 (CROSSWORD QUIZ) --- */
+        .question-item { margin-bottom: 15px; text-align: left; }
+        .question-item input { width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ccc; border-radius: 5px; font-family: 'Times New Roman', Times, serif; }
+
+        /* --- Nivel 13 (CLAW MACHINE) --- */
+        #claw-machine-area { width: 400px; height: 300px; background-color: #b3e5fc; border: 5px solid #0288d1; margin: 20px auto; position: relative; overflow: hidden; }
+        #claw-track { width: 90%; height: 10px; background-color: #333; position: absolute; top: 10px; left: 5%; }
+        #claw { position: absolute; top: 10px; width: 30px; height: 30px; background-color: #ff9800; border-radius: 50%; cursor: pointer; }
+        .prize-object { position: absolute; bottom: 10px; font-size: 2em; }
+        #claw-button { background-color: #0288d1; color: white; margin-top: 10px; }
+
+
+        /* --- Nivel 15 (CHAT SIM) --- */
+        #chat-window { height: 400px; border: 1px solid #ccc; background-color: #f1f8e9; overflow-y: scroll; padding: 10px; text-align: left; margin-bottom: 15px; }
+        .message-bot { background-color: #e3f2fd; padding: 8px; border-radius: 15px 15px 15px 0; margin-bottom: 10px; max-width: 80%; }
+        .message-player { background-color: #ffe0b2; padding: 8px; border-radius: 15px 15px 0 15px; margin-bottom: 10px; max-width: 80%; margin-left: auto; }
+        #options-chat button { width: 48%; background-color: var(--color-principal); color: white; }
+
+        /* --- Nivel 17 (WORD BINGO) --- */
+        #bingo-area { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin-bottom: 20px; }
+        .bingo-card { border: 2px solid var(--color-principal); padding: 10px; border-radius: 8px; background-color: white; position: relative; }
+        .word-grid { display: flex; margin-top: 5px; }
+        .letter-box { width: 25px; height: 30px; border: 1px solid #ccc; margin: 2px; display: flex; justify-content: center; align-items: center; font-weight: bold; }
+        .letter-box.filled { background-color: var(--color-acierto); color: white; }
+        #letter-dropper { background-color: #f48fb1; padding: 10px; border-radius: 10px; display: flex; justify-content: center; align-items: center; height: 60px; }
+        #falling-letter { font-size: 2em; font-weight: bold; color: white; cursor: pointer; }
+
+        /* --- Estilos Finales (Tienda de Premios) --- */
+        #pantalla-final {
+            margin-top: 50px;
+            text-align: center;
+        }
+
+        #pantalla-final h2 {
+            color: var(--color-acierto);
+            font-size: 2em;
+        }
+        
+        #tienda-premios {
+            margin-top: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .premio-item {
+            background-color: #fff3e0;
+            padding: 15px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        .premio-item button {
+            background-color: #ffab40;
+            color: white;
+            padding: 8px 15px;
+        }
+        
+    </style>
+</head>
+<body>
+
+    <div id="juego-contenedor">
+        <div id="barra-info">
+            <h3 id="contador-corazones">Corazones: 0/14 ❤️</h3>
+            <h3 id="etapa-actual">Nivel 1</h3>
+        </div>
+
+        <h1 id="titulo-nivel"></h1>
+        
+        <div id="juego-dinamico">
+            </div>
+
+        <p id="mensaje-feedback" style="font-weight: bold; min-height: 20px; margin-top: 15px;"></p>
+        
+        <button id="boton-siguiente" style="display:none;">Siguiente >></button>
+    </div>
+
+    <div id="pantalla-final" style="display: none;">
+        <h2>¡CONGRATULACIONES! HAS COMPLETADO LOS 16 NIVELES.</h2>
+        <p>¡Ganaste **16/16 corazones**! Ahora puedes canjearlos en la **Tienda de Premios**.</p>
+        
+        <div id="tienda-premios">
+            </div>
+    </div>
+
+    <script>
+        /*
+        ========================================
+        JAVASCRIPT (LÓGICA DEL JUEGO)
+        ========================================
+        */
+        
+        let corazones = 0;
+        let nivelActual = 0; // Índice 0 = Nivel 1
+        let escenaActual = 0; // Índice 0 = Primera escena del nivel
+        const MAX_NIVELES = 14;
+        let juegosActivos = {}; // Objeto para manejar la lógica de cada nivel activo
+
+        // --- PRECIOS DE LA TIENDA ---
+        const premios = [
+            { nombre: "Carta", costo: 3 },
+            { nombre: "Video", costo: 7 },
+            { nombre: "Collage de fotos", costo: 11 },
+            { nombre: "Todos los anteriores regalos", costo: 14 }
+        ];
+
+        // --- URLs DE IMAGEN (A REEMPLAZAR POR LAS DIRECCIONES REALES) ---
+        const imageURLs = {
+            scena1: 'escena1.jpeg', // Reemplazar con URL real
+            scena2: 'escena2.jpeg', // Reemplazar con URL real
+            scena3: 'escena3.jpeg', // Reemplazar con URL real
+            scena4: 'escena4.jpeg', // Reemplazar con URL real
+            scena5: 'escena5.jpeg', // Reemplazar con URL real
+            scena6: 'escena6.jpeg', // Reemplazar con URL real
+            puzzle: 'rompecabezas.jpeg' // Reemplazar con URL real
+        };
+
+        // --- ESTRUCTURA DE LOS 17 NIVELES ---
+        const niveles = [
+            // Nivel 1: QUIZ / HISTORIA (TEXTOS COMPLETOS AÑADIDOS)
+            {
+                id: 1,
+                titulo: "Todo empezó en una fiesta",
+                tipo: "quiz",
+                escenas: [
+                    { 
+                        imagen: imageURLs.scena1, 
+                        texto: "Hace tres años, en una fiesta de Manuela —quien en ese entonces era su mejor amiga—, ella lo vio por primera vez. Él era amigo del mejor amigo de Manuela, y aunque fue solo una vez, ella se acordó perfectamente. Pensó: “Está wonito… se viste bien, pero me parece muy pupi, muy creído.” Y sin saberlo, esa noche fue la primera escena de algo que tardaría años en volver a aparecer.", 
+                        opciones: ["Qué creído era 😒", "Qué gomelito, pero lindo boff 😍", "Ay, me da igual 🙄", "Todas son correctas"], 
+                        respuestaCorrecta: 3 
+                    },
+                    { 
+                        imagen: imageURLs.scena2, 
+                        texto: "Pasaron casi tres años sin saber de él. Un día de agosto, ella fue al entreno de voleibol de su mejor amigo, sin imaginar que lo volvería a ver ahí. No se hablaban, pero ella lo reconoció enseguida. Un amigo le dijo: “Despídete de él.” Ella, sin saber su nombre, preguntó quién era. “Gabo”, le respondieron. Ella se despidió, pero cuando lo hizo, pensó: “Malparido, me miró mal.” Él estaba jugando con un balón contra una reja, y ese momento, aunque pequeño, volvió a conectar algo que había quedado en pausa.", 
+                        opciones: ["Me miró mal, que grosero 👀", "Ese balón rebotó directo a mi destino 😳", "Ay no, seguro ni me vio 😅"], 
+                        respuestaCorrecta: 0 
+                    },
+                    { 
+                        imagen: imageURLs.scena3, 
+                        texto: "Poco después, ella tenía que entregar su producto final del proyecto de entreno, pero él llegó tarde y ya no alcanzó a probarlo. Su mejor amigo le contó. Ese mismo día, él también había llevado galletas, y cuando ella ya se iba, él la llamó. Le dijo que fuera a las bancas donde estaba. Y ahí, con una sonrisa medio nerviosa, soltó: —Si me quieres hablar, háblame. Yo te contesto. Ella se quedó en shock, colorada, y apenas alcanzó a decir “¿ah?”, antes de que él agregara: —Por Instagram. Ella se fue riendo, pero esa misma noche, a las nueve, él cumplió su palabra y le escribió.", 
+                        opciones: ["Le habló con la excusa de preguntar sobre sus galletas 🍪", "Le habló porque ya le gustaba 😏", "Le habló porque le debía un dulce y una sonrisa 💕"], 
+                        respuestaCorrecta: 0 
+                    },
+                    { 
+                        imagen: imageURLs.scena4, 
+                        texto: "Desde ese día empezaron a hablar casi todos los días en entreno. Se molestaban, se reían, se buscaban. Hasta que un día su mejor amigo no fue, y ella le dijo a él que tampoco iba a ir porque no tenía con quién. Él le respondió que la llevaría. Y así fue. La primera vez que la llevó, ella no podía ni mirarlo; se reía mirando al piso, y él le decía: —Ay, no me mires así. —No te estoy mirando —respondía ella, muerta de la risa. Después de eso, empezó a llevarla más veces. Y un día en entreno, entre risas, le dio su primer beso.", 
+                        opciones: ["Fue culpa del voleibol y de las risas 🏐", "Fue el destino disfrazado de entrenamiento 💫", "Fue él, con su cara de bobo, el culpable 😳"], 
+                        respuestaCorrecta: 2 
+                    },
+                    { 
+                        imagen: imageURLs.scena5, 
+                        texto: "Al otro día, él le escribió diciendo que estaba confundido, que todo iba muy rápido. Ella le dijo que estaba bien, que era su decisión. Ese día iba a ir a jugar al deportivo, pero terminó en otra parte. Después, él fue, y ella no. Y ahí empezó el silencio. Él habló con su mejor amigo, y le contó lo que había pasado. Su amigo le dijo que con razón ella había cambiado, que había metido la pata. En la noche, él le escribió y le explicó que no quería que lo tomara a mal. Ella le respondió con calma, pero firme: —Cada quien se tiene las consecuencias de sus decisiones.", 
+                        opciones: ["Era su manera de proteger su corazón", "Estaba dolida, pero igual lo quería 🥺", "Estaba confundida, pero sabía lo que valía 💅"], 
+                        respuestaCorrecta: 0 
+                    },
+                    { 
+                        imagen: imageURLs.scena6, 
+                        texto: "Al día siguiente, él le escribió de nuevo. Le dijo que quería recogerla del colegio. Ella aceptó. Después de clases, la acompañó a comprar unas cosas para su proyecto. Él estudiaba gastronomía, y entre bolsas y risas, ella le dijo: —Es la última vez que te voy a dar, porque estás confundido. Él sonrió. Salieron del lugar, y en el camino, sin pensarlo tanto, él se detuvo y le preguntó: —¿Quieres ser mi novia? Ella, entre sorpresa y ternura, dijo que sí. Y desde ahí, empezó su historia de de veritas 💕.", 
+                        opciones: ["Fue su momento Shrek: “Yo te amo, de veritas” 💗", "Fue el inicio del juego más bonito", "Fue lo más feliz del universo 💍"], 
+                        respuestaCorrecta: 1 
+                    }
+                ],
+            },
+            
+            // Nivel 2: MINECRAFT CONSTRUCCIÓN
+            {
+                id: 2,
+                titulo: "Construcción Minecraft",
+                tipo: "minecraft",
+                mensajeFinal: "Sé que te gustan mucho los videojuegos. Puede que este no sea el mejor, pero lo hice con mucho cariño. Te amo, mi Chefcito Ratatouille 💕"
+            },
+            
+            // Nivel 3: SHOOTER ROMÁNTICO
+            {
+                id: 3,
+                titulo: "Mis balas son corazones",
+                tipo: "shooter",
+                objetivo: 7,
+                frases: [
+                    "Te amo mucho 💘", "Siempre te extraño 💭", "Me encantas, me fascinas ✨", 
+                    "Cuídate por favor… si a ti te pasa algo, a mí también 💔", 
+                    "Gracias por ser mi novio 💞", "Eres el mejor chefcito del mundo 👨🏻‍🍳💗", 
+                    "Te adoro con todo mi corazón, gracias por todo 💝"
+                ],
+            },
+            
+            // Nivel 4: CARD STRATEGY - MODIFICADO para imágenes
+            {
+                id: 4,
+                titulo: "Batalla de Corazones",
+                tipo: "card-strategy",
+                vidaInicial: 3,
+                cartas: [
+                    // REEMPLAZA LAS CADENAS 'URL_IMG_...' con las direcciones reales de tus imágenes para que aparezcan
+                    { nombre: "Te Amo", daño: 1, mensaje: "Te amo más que a mi paz.", icon: "💖", imageUrl: "URL_IMG_TE_AMO" },
+                    { nombre: "Recuerdo Bonito", curacion: 1, mensaje: "¡Curación de amor!", icon: "✨", imageUrl: "URL_IMG_RECUERDO" },
+                    { nombre: "Chefcito", aturdir: 1, mensaje: "Mi chef favorito, cuidado con mis encantos.", icon: "👨🏻‍🍳", imageUrl: "URL_IMG_CHEFCITO" },
+                    { nombre: "Besito Explosivo", daño: 2, mensaje: "¡Beso directo!", icon: "💋", imageUrl: "URL_IMG_BESITO" },
+                    { nombre: "Mensaje del Alma", mensaje: "Eres mi persona favorita.", icon: "💌", imageUrl: "URL_IMG_MENSAJE" },
+                    { nombre: "Protección del Amor", escudo: 1, mensaje: "Escudo activado.", icon: "🛡️", imageUrl: "URL_IMG_PROTECCION" }
+                ],
+                mensajeVictoria: "Ganaste esta batalla, mi amor. Porque el amor siempre vence."
+            },
+
+            // Nivel 6: VOLLEYBALL RHYTHM
+            {
+                id: 5,
+                titulo: "Amor en la cancha",
+                tipo: "volleyball-rhythm",
+                objetivoPuntos: 3,
+                jugadas: { P: "Recepción", B: "Bloqueo", R: "Remate", S: "Saque" },
+                mensajesAcierto: ["Esa recepción fue perfecta, como tú.", "Bloqueaste mi tristeza otra vez.", "Tu remate directo a mi corazón.", "Siempre juegas con amor, por eso ganas.", "Eres mi campeón en la cancha y en la vida."],
+                mensajeFallo: "Fallaste… pero aún te amo 😜 vuelve a intentarlo."
+            },
+            
+            // Nivel 7: PENALTY KICK
+            {
+                id: 6,
+                titulo: "Penales Románticos",
+                tipo: "penalty-kick",
+                objetivoGoles: 3,
+                mensajesGol: ["Golazo, directo a mi corazón.", "Cada vez que anotas, me enamoro más.", "Eres mi jugador estrella, mi amor."],
+                mensajeFallo: "Fallaste, pero igual te amo 😅",
+                mensajeVictoria: "¡Victoria total! Este gol fue para recordarte que tú siempre anotas directo a mi corazón."
+            },
+
+            // Nivel 8: SHELL GAME
+            {
+                id: 7,
+                titulo: "Encuentra el corazón escondido",
+                tipo: "shell-game",
+                rondas: [
+                    { velocidad: 300, acierto: "Primera victoria, mi amor. Tienes los ojos más atentos del mundo 💖", fallo: "No pasa nada, sigues teniendo mi corazón 😚" },
+                    { velocidad: 300, acierto: "Eres increíble. Siempre encuentras mi corazón sin perderte 💕", fallo: "Ups… pero igual te amo por intentarlo 💗" },
+                    { velocidad: 300, acierto: "¡Lo lograste, mi amor! Nadie mueve mi corazón como tú 😍" }
+                ],
+                mensajeFinal: "T E A M O ❤️"
+            },
+            
+            // Nivel 9: JIGSAW PUZZLE (URL AÑADIDA EN EL ESTILO CSS)
+            {
+                id: 8,
+                titulo: "Nuestro rompecabezas",
+                tipo: "jigsaw-puzzle",
+                tamano: 25, // 5x5
+                mensajesUnion: [
+                    "Encajas perfecto en mi vida 💞", "Cada pedacito contigo vale oro 💫", "Siempre supe que eras mi mitad 💕", 
+                    "Esto ya parece arte, como tú 😍", "Mi chefcito Ratatouille 👨🏻‍🍳, sos mi persona favorita", 
+                    "Te amo de veritas 💗", "Todo encaja mejor cuando estás aquí 💋", "Nuestra historia siempre se completa 💖", "Eres mi lugar favorito en el mundo 🌎💞", "Desde que llegaste, todo tiene más sentido ✨", "Tú y yo, versión infinita ♾️💗", "Mi caos se calma cuando me abrazas 🤍", "Nos salió bonito esto de querernos 💫", "Tu sonrisa debería ser patrimonio universal 😍", "Mi corazón te reconoce hasta con los ojos cerrados 💋", "Tu voz es mi sonido favorito 🎧💓", "A tu lado hasta lo simple se vuelve mágico ✨", "Si tú estás, todo vale la pena 💕", "Mi vida contigo suena a canción bonita 🎶💘", "No hay distancia cuando el alma se abraza 💞", "Tú eres mi suerte favorita 🍀💖", "Siempre eres mi pensamiento más bonito 💭💗", "Te pienso y se me acomoda el alma 🕊️💫", "Eres mi destino disfrazado de casualidad 💋💞"
+                ],
+                mensajeFinal: "Así como este rompecabezas, nosotros también encajamos perfecto 💕"
+            },
+            
+            // Nivel 10: MOVIE QUIZ
+            {
+                id: 9,
+                titulo: "Amor de película",
+                tipo: "quiz-multiple",
+                preguntas: [
+                    { frase: "De veritas, de veritas.", opciones: ["Shrek", "Frozen", "Toy Story"], respuestaCorrecta: 0 },
+                    { frase: "Prefiero vivir una vida contigo que enfrentar todas las edades del mundo sola.", opciones: ["Gato con Botas 2", "La Sirenita", "Valiente"], respuestaCorrecta: 0 },
+                    { frase: "Te amo no por quién eres, sino por quién soy cuando estoy contigo.", opciones: ["Enredados", "La Bella y la Bestia", "Frozen"], respuestaCorrecta: 1 },
+                    { frase: "Tú me completaste, mi media estrella fugaz.", opciones: ["Lilo & Stitch", "UP: Una aventura de altura", "Ratatouille"], respuestaCorrecta: 1 },
+                    { frase: "No importa cuán lejos llegue, siempre regresaré a ti.", opciones: ["Moana", "Valiente", "Mulan"], respuestaCorrecta: 0 },
+                    { frase: "Porque el amor no siempre es perfecto, pero siempre vale la pena.", opciones: ["Ratatouille", "Encanto", "Coco"], respuestaCorrecta: 0 },
+                    { frase: "Y vivieron felices… pero no para siempre, porque su historia aún continúa.", opciones: ["Shrek 2", "Frozen 2", "Toy Story 3"], respuestaCorrecta: 0 }
+                ],
+                mensajeFinal: "Te lo dije, mi chefcito Ratatouille, tú y yo somos amor de película 🎬💕 De veritas, de veritas 💗"
+            },
+
+            // Nivel 11: MEMORY GAME
+            {
+                id: 10,
+                titulo: "Encuentra la pareja del amor",
+                tipo: "memory-game",
+                numPares: 10,
+                mensajesAcierto: [
+                    "Te amo mucho más de lo que imaginas 💗", "Eres la mejor parte de mis días 💕", "Cada vez que sonríes, todo mejora 💫", 
+                    "Eres mi lugar seguro 💖", "Qué suerte tengo de tenerte 😍", "Eres mi paz y mi caos favorito 💞", 
+                    "No necesito nada más que a ti 💓", "Mi vida es más bonita contigo 💘", "Tú eres mi persona 🫶", "Te amo infinitamente 💍"
+                ],
+                mensajeFinal: "Eres el amor de mi vida 💖 ¡Nivel completado!"
+            },
+            
+            // Nivel 12: CROSSWORD QUIZ (Textual)
+            {
+                id: 11,
+                titulo: "Crucigrama ¿Cuánto sabes de mí?",
+                tipo: "crossword-quiz",
+                preguntas: [
+                    { pregunta: "Nombre completo de Juanita", respuesta: "JUANITA SANCHEZ SUAREZ", mensaje: "Te amo por conocerme tan bien 💕" },
+                    { pregunta: "Fecha en que se volvieron novios", respuesta: "3 DE SEPTIEMBRE 2025", mensaje: "Ese día cambió todo para nosotros 💗" },
+                    { pregunta: "Colores favoritos de Juanita", respuesta: "NEGRO Y ROJO", mensaje: "¡Amo que recuerdes mis gustos! 😍" },
+                    { pregunta: "Cumpleaños de Juanita", respuesta: "30 DE OCTUBRE", mensaje: "Feliz de que sepas cuándo celebrarme 🎉" },
+                    { pregunta: "Lugar de la primera cita", respuesta: "PARQUE", mensaje: "Ese lugar siempre tendrá magia ✨" },
+                    { pregunta: "Juego que más juegan en maquinitas", respuesta: "ENCAJAR PELOTA", mensaje: "¡Me encanta que lo recordemos! ⚽️" },
+                    { pregunta: "Platillo que más le gusta que cocine (desde el día 1)", respuesta: "GALLETAS", mensaje: "Siempre me sorprendes con tu amor 💖" },
+                    { pregunta: "Lugar donde se volvieron a ver después de 3 años", respuesta: "POLIDEPORTIVO", mensaje: "Ese reencuentro fue el inicio de todo 💫" },
+                    { pregunta: "Qué hacen cuando no se ven todo el día", respuesta: "LLAMADA", mensaje: "Aunque no estemos juntos, siempre estás conmigo 📞" },
+                    { pregunta: "Apodo especial que te digo", respuesta: "MI CACHETONCITO RATATOUILLE", mensaje: "Mi Chefcito Ratatouille favorito 😍" }
+                ],
+                mensajeFinal: "Felicidades, completaste el nivel 💖 Sé que recuerdas todos nuestros momentos. Te amo mi Chefcito Ratatouille 💕"
+            },
+            
+            // Nivel 13: CLAW MACHINE
+            {
+                id: 12,
+                titulo: "La Garrita de Amor",
+                tipo: "claw-machine",
+                intentos: 10,
+                objetos: [
+                    { nombre: "Peluche", mensaje: "¡Lo lograste! Te amo mucho 💕" },
+                    { nombre: "Corazón de cristal", mensaje: "Siempre me encantas 😍" },
+                    { nombre: "Galleta mini", mensaje: "Gracias por ser tan dulce 🥰" },
+                    { nombre: "Carta pequeña", mensaje: "Eres mi Chefcito Ratatouille 💖" }
+                ],
+                mensajesFallo: ["Uy, casi… pero te amo igual 😘", "La próxima va a ser tuya 💗"]
+            },
+            
+
+            // Nivel 15: CHAT SIM
+            {
+                id: 13,
+                titulo: "Simulador de Chat Romántico",
+                tipo: "chat-sim",
+                turnos: [
+                    { bot: "Hola, mi amor, ¿cómo estuvo tu día? 🥰", opciones: ["Estuvo bien, gracias por preguntar 💕", "Estuvo aburrido 🥺"] },
+                    { bot: "Pensé en ti todo el día 😳", opciones: ["Yo también pensaba en ti 💖", "Qué lindo, yo también 😘"] },
+                    { bot: "Me hace tan feliz que estés en mi vida, eres increíble 💫", opciones: ["Tú también eres increíble, mi amor 💕", "Gracias "] },
+                    { bot: "Quiero abrazarte y no soltarte nunca 😍", opciones: ["Yo también quiero abrazarte fuerte 💗", "Ven, mi amor, que te espero 🥰"] },
+                    { bot: "Gracias por ser tan especial conmigo… te amo mucho 💖", opciones: ["Yo también te amo con todo mi corazón 💓", "Eres lo mejor de mi vida, mi vida 💕"] }
+                ],
+                mensajeFinal: "¡Me encantó hablar contigo, eres lo mejor de mi día! 💖"
+            },
+
+
+            // Nivel 17: WORD BINGO
+            {
+                id: 14,
+                titulo: "Bingo de amor",
+                tipo: "word-bingo",
+                cartas: [
+                    { palabra: "TE AMO", mensaje: "¡Te amo mucho! 💕", letrasFaltantes: ['T', 'E', 'A', 'M', 'O'], completada: false },
+                    { palabra: "ME ENCANTAS", mensaje: "¡Me encantas! 😍", letrasFaltantes: ['M', 'E', 'E', 'N', 'C', 'A', 'N', 'T', 'A', 'S'], completada: false },
+                    { palabra: "MI AMOR", mensaje: "¡Eres mi amor! 💖", letrasFaltantes: ['M', 'I', 'A', 'M', 'O', 'R'], completada: false },
+                    { palabra: "ES EL MEJOR", mensaje: "¡Mi chefcito favorito! 👨🏻‍🍳", letrasFaltantes: ['E', 'S', 'E', 'L', 'M', 'E', 'J', 'O', 'R'], completada: false }
+                ],
+                mensajeFinal: "¡Felicidades! ¡Has completado todas las cartas! Te amo de veritas 💗"
+            }
+        ];
+
+        // --- FUNCIONES GLOBALES ---
+        function mostrarFeedback(mensaje) {
+            const container = document.getElementById('juego-contenedor');
+            const div = document.createElement('div');
+            div.className = 'feedback-flotante';
+            div.textContent = mensaje;
+            container.appendChild(div);
+            setTimeout(() => div.remove(), 3000);
+        }
+
+        function actualizarContador() {
+            document.getElementById('contador-corazones').textContent = `Corazones: ${corazones}/${MAX_NIVELES} ❤️`;
+            document.getElementById('etapa-actual').textContent = `Nivel ${nivelActual + 1}`;
+        }
+
+        function canjearPremio(nombre, costo) {
+            if (corazones >= costo) {
+                corazones -= costo;
+                actualizarContador();
+                alert(`¡Felicidades! Has canjeado "${nombre}". Revisa tu regalo.`);
+                // Desactivar el botón o la lógica de la tienda si es necesario
+                // Recargar la tienda para reflejar los corazones restantes
+                document.getElementById('tienda-premios').innerHTML = '';
+                cargarTiendaPremios();
+            } else {
+                alert(`No tienes suficientes corazones para canjear "${nombre}". Necesitas ${costo} ❤️.`);
+            }
+        }
+
+        function avanzarNivel() {
+            // Limpiar listeners de teclado y ratón de juegos anteriores
+            Object.values(juegosActivos).forEach(juego => {
+                if (juego.limpiar) juego.limpiar();
+            });
+            juegosActivos = {};
+
+            if (nivelActual < niveles.length - 1) {
+                // Sumar corazón
+                corazones++;
+                // Mover al siguiente nivel
+                nivelActual++;
+                escenaActual = 0;
+                cargarNivel(nivelActual);
+            } else if (nivelActual === niveles.length - 1) {
+                // Último nivel completado
+                corazones++; // Último corazón
+                mostrarPantallaFinal();
+            }
+        }
+
+        // --- CARGADOR PRINCIPAL DE NIVELES ---
+        function cargarNivel(index) {
+            actualizarContador();
+            const nivel = niveles[index];
+            const juegoDinamico = document.getElementById('juego-dinamico');
+            document.getElementById('titulo-nivel').textContent = `Nivel ${nivel.id}: "${nivel.titulo}"`;
+            document.getElementById('mensaje-feedback').textContent = '';
+            document.getElementById('boton-siguiente').style.display = 'none';
+            juegoDinamico.innerHTML = ''; // Limpiar contenido anterior
+
+            switch (nivel.tipo) {
+                case "quiz":
+                    juegosActivos.quiz = { avanzar: avanzarEscenaQuiz };
+                    cargarQuiz(nivel);
+                    break;
+                case "minecraft":
+                    cargarMinecraft(nivel);
+                    break;
+                case "shooter":
+                    juegosActivos.shooter = inicializarShooter(nivel);
+                    break;
+                case "card-strategy":
+                    juegosActivos.cardStrategy = inicializarCardStrategy(nivel);
+                    break;
+                case "volleyball-rhythm":
+                    juegosActivos.volleyball = inicializarVolleyballRhythm(nivel);
+                    break;
+                case "penalty-kick":
+                    juegosActivos.penalty = inicializarPenaltyKick(nivel);
+                    break;
+                case "shell-game":
+                    juegosActivos.shell = inicializarShellGame(nivel);
+                    break;
+                case "jigsaw-puzzle":
+                    juegosActivos.puzzle = inicializarJigsawPuzzle(nivel);
+                    break;
+                case "quiz-multiple":
+                    juegosActivos.quizMultiple = inicializarQuizMultiple(nivel);
+                    break;
+                case "memory-game":
+                    juegosActivos.memory = inicializarMemoryGame(nivel);
+                    break;
+                case "crossword-quiz":
+                    juegosActivos.crossword = inicializarCrosswordQuiz(nivel);
+                    break;
+                case "claw-machine":
+                    juegosActivos.claw = inicializarClawMachine(nivel);
+                    break;
+                case "drawing-steps":
+                    juegosActivos.drawing = inicializarDrawingSteps(nivel);
+                    break;
+                case "chat-sim":
+                    juegosActivos.chat = inicializarChatSim(nivel);
+                    break;
+                case "racing-collector":
+                    juegosActivos.racing = inicializarRacingCollector(nivel);
+                    break;
+                case "word-bingo":
+                    juegosActivos.bingo = inicializarWordBingo(nivel);
+                    break;
+            }
+        }
+        
+        // --- Nivel Final (TIENDA) ---
+        function cargarTiendaPremios() {
+            document.getElementById('juego-contenedor').style.display = 'none';
+            document.getElementById('pantalla-final').style.display = 'block';
+            document.getElementById('pantalla-final').querySelector('p').textContent = `¡Ganaste **$14/14 corazones**! Ahora puedes canjearlos en la **Tienda de Premios** o guardarlos para mí.`;
+            
+            const tienda = document.g
+            etElementById('tienda-premios');
+            tienda.innerHTML = '';
+
+            premios.forEach(premio => {
+                const item = document.createElement('div');
+                item.className = 'premio-item';
+                item.innerHTML = `
+                    <span>${premio.nombre} (${premio.costo} ❤️)</span>
+                    <button onclick="canjearPremio('${premio.nombre}', ${premio.costo})" ${corazones < premio.costo ? 'disabled' : ''}>Canjear</button>
+                `;
+                tienda.appendChild(item);
+            });
+        }
+        
+        function mostrarPantallaFinal() {
+            // Asegurarse de que el último nivel sume el corazón si no lo hizo el mecanismo de avance
+            if (corazones < MAX_NIVELES) corazones = MAX_NIVELES;
+            
+            // Limpiar el contenido del juego
+            document.getElementById('juego-contenedor').style.display = 'none';
+            
+            // Mostrar la pantalla final
+            cargarTiendaPremios();
+        }
+
+        // --- Nivel 1: QUIZ ---
+        function cargarQuiz(nivel) {
+            const juegoDinamico = document.getElementById('juego-dinamico');
+            const escena = nivel.escenas[escenaActual];
+            
+            // Actualizar etiqueta de etapa
+            document.getElementById('etapa-actual').textContent = `Nivel 1 (Escena ${escenaActual + 1}/${nivel.escenas.length})`;
+
+            juegoDinamico.innerHTML = `
+                <div id="imagen-simulada" style="background-image: url('${escena.imagen}');">${escena.imagen.startsWith('URL_') ? 'IMAGEN FALTANTE' : ''}</div>
+                <p id="texto-historia">${escena.texto}</p>
+                <div id="opciones-quiz"></div>
+            `;
+            const opcionesDiv = document.getElementById('opciones-quiz');
+            const feedback = document.getElementById('mensaje-feedback');
+            feedback.textContent = ''; // Limpiar feedback
+
+            escena.opciones.forEach((opcion, index) => {
+                const boton = document.createElement('button');
+                boton.className = 'opcion-boton';
+                boton.textContent = opcion;
+                boton.onclick = () => verificarRespuestaQuiz(index, escena.respuestaCorrecta, feedback);
+                opcionesDiv.appendChild(boton);
+            });
+        }
+
+        function verificarRespuestaQuiz(indiceSeleccionado, indiceCorrecto, feedback) {
+            const botones = document.querySelectorAll('.opcion-boton');
+            botones.forEach(btn => btn.disabled = true); // Desactivar todos los botones
+
+            if (indiceSeleccionado === indiceCorrecto) {
+                feedback.textContent = '¡✅ Correcto! Sigue con la historia.';
+                botones[indiceSeleccionado].classList.add('correcta');
+                document.getElementById('boton-siguiente').style.display = 'block';
+                document.getElementById('boton-siguiente').textContent = 'Siguiente Escena >>';
+            } else {
+                feedback.textContent = '❌ Incorrecto. Inténtalo de nuevo.';
+                botones[indiceSeleccionado].classList.add('incorrecta');
+                botones[indiceCorrecto].classList.add('correcta');
+                // Re-habilitar botones para re-intentar (en modo quiz de historia)
+                setTimeout(() => {
+                    botones.forEach(btn => {
+                        if (btn !== botones[indiceCorrecto]) { // Mantener la correcta marcada
+                            btn.disabled = false;
+                            btn.classList.remove('incorrecta');
+                        }
+                    });
+                    feedback.textContent = 'Inténtalo de nuevo.';
+                }, 1500);
+            }
+        }
+
+        function avanzarEscenaQuiz() {
+            const nivel = niveles[nivelActual];
+            if (escenaActual < nivel.escenas.length - 1) {
+                escenaActual++;
+                cargarQuiz(nivel);
+            } else {
+                mostrarFeedback(`¡🎉 Nivel ${nivelActual + 1} COMPLETADO!`);
+                document.getElementById('boton-siguiente').textContent = 'Siguiente Nivel >>';
+                document.getElementById('boton-siguiente').onclick = avanzarNivel;
+                document.getElementById('boton-siguiente').style.display = 'block';
+            }
+        }
+
+        // Nivel 2: MINECRAFT
+        let bloqueSeleccionado = 'tierra';
+        function seleccionarBloque(tipo) {
+            document.querySelectorAll('.bloque-opcion').forEach(b => b.classList.remove('selected'));
+            document.querySelector(`.bloque-opcion[data-block="${tipo}"]`).classList.add('selected');
+            bloqueSeleccionado = tipo;
+        }
+
+        function cargarMinecraft(nivel) {
+            const juegoDinamico = document.getElementById('juego-dinamico');
+            juegoDinamico.innerHTML = `
+                <div id="minecraft-area">
+                    <p id="minecraft-nota">🪶 “Recuerda: lo que construyas no se guarda, disfrútalo por un momento.”</p>
+                    <div id="paleta-bloques" style="display:flex; justify-content:center; gap: 10px; margin-bottom: 20px;">
+                        <div class="bloque-opcion selected" data-block="tierra" onclick="seleccionarBloque('tierra')" style="background-color: #795548;"></div>
+                        <div class="bloque-opcion" data-block="piedra" onclick="seleccionarBloque('piedra')" style="background-color: #9e9e9e;"></div>
+                        <div class="bloque-opcion" data-block="madera" onclick="seleccionarBloque('madera')" style="background-color: #a1887f;"></div>
+                        <div class="bloque-opcion" data-block="aire" onclick="seleccionarBloque('aire')" style="background-color: #8bc34a; font-size: 20px;">X</div>
+                    </div>
+                    <div id="minecraft-canvas"></div>
+                    <button id="boton-figura-completa" onclick="mostrarSorpresaMinecraft()">FIGURA COMPLETA 🏡</button>
+                    <div id="sorpresa-minecraft" style="display:none; flex-direction:column; align-items:center; margin-top:20px;">
+                        <div class="animacion-sobre" style="font-size: 5em;">✉️</div>
+                        <div id="mensaje-hoja" style="background-color:#fffde7; padding:20px; border-radius:8px; margin:10px; border: 1px dashed #d50000;">${nivel.mensajeFinal}</div>
+                        <button style="margin-top: 15px; background-color: var(--color-principal);" onclick="avanzarNivel()">Siguiente nivel ></button>
+                    </div>
+                </div>
+            `;
+            const canvas = document.getElementById('minecraft-canvas');
+            for (let i = 0; i < 96; i++) { // 12x8 = 96 celdas
+                const celda = document.createElement('div');
+                celda.className = 'block-celda';
+                celda.dataset.index = i;
+                celda.onclick = function() {
+                    this.className = `block-celda ${bloqueSeleccionado}`;
+                    this.style.backgroundColor = document.querySelector(`.bloque-opcion[data-block="${bloqueSeleccionado}"]`).style.backgroundColor;
+                    if (bloqueSeleccionado === 'aire') this.style.backgroundColor = '#8bc34a'; // Fondo de cesped
+                };
+                canvas.appendChild(celda);
+            }
+
+            window.seleccionarBloque = seleccionarBloque; // Exponer al ámbito global
+
+            window.mostrarSorpresaMinecraft = () => {
+                document.getElementById('minecraft-canvas').style.display = 'none';
+                document.getElementById('paleta-bloques').style.display = 'none';
+                document.getElementById('boton-figura-completa').style.display = 'none';
+                document.getElementById('minecraft-nota').style.display = 'none';
+                document.getElementById('sorpresa-minecraft').style.display = 'flex';
+            };
+        }
+        
+        // Nivel 3: SHOOTER ROMÁNTICO
+function inicializarShooter(nivel) {
+    let enemigosRestantes = nivel.objetivo; // Objetivo: 7
+    const juegoDinamico = document.getElementById('juego-dinamico');
+    juegoDinamico.innerHTML = `
+        <p>Corazones a Recolectar: <span id="corazones-restantes">${enemigosRestantes}</span></p>
+        <div id="shooter-area"></div>
+    `;
+    const area = document.getElementById('shooter-area');
+    
+    const checkWin = () => {
+        if (enemigosRestantes <= 0) {
+            mostrarFeedback(`¡Nivel ${nivel.id} COMPLETO! ¡${nivel.objetivo} corazones recogidos!`);
+            area.innerHTML = '';
+            document.getElementById('boton-siguiente').textContent = 'Siguiente Nivel >>';
+            document.getElementById('boton-siguiente').onclick = avanzarNivel;
+            document.getElementById('boton-siguiente').style.display = 'block';
+            return true;
+        }
+        return false;
+    };
+    
+    const generarPosicionAleatoria = (width, height, size) => ({ 
+        x: Math.random() * (width - size), 
+        y: Math.random() * (height - size) 
+    });
+
+    const moverEnemigo = (enemigo, pos, area) => {
+        const target = generarPosicionAleatoria(area.offsetWidth, area.offsetHeight, 40);
+        enemigo.style.transition = 'all 1s linear';
+        enemigo.style.left = `${target.x}px`;
+        enemigo.style.top = `${target.y}px`;
+        setTimeout(() => {
+            if (area.contains(enemigo) && enemigosRestantes > 0) 
+                moverEnemigo(enemigo, target, area);
+        }, 1000);
+    };
+
+    const crearEnemigo = () => {
+        if (checkWin()) return;
+        const enemigo = document.createElement('div');
+        enemigo.className = 'enemigo-shooter';
+        
+        // **IMPORTANTE:** Obtener las dimensiones del área DEBE hacerse aquí, después de la renderización inicial.
+        const pos = generarPosicionAleatoria(area.offsetWidth, area.offsetHeight, 40);
+        
+        enemigo.style.left = `${pos.x}px`;
+        enemigo.style.top = `${pos.y}px`;
+        // <--- LÍNEA ELIMINADA: Ya no se asigna la frase al contenido del enemigo.
+        area.appendChild(enemigo);
+        
+        enemigo.onclick = () => {
+            enemigo.remove();
+            enemigosRestantes--;
+            document.getElementById('corazones-restantes').textContent = enemigosRestantes;
+            const mensaje = nivel.frases[Math.floor(Math.random() * nivel.frases.length)];
+            mostrarFeedback(`¡Corazón Recogido! ${mensaje}`);
+            checkWin();
+            setTimeout(crearEnemigo, 1000); // Generar nuevo enemigo después de 1 segundo
+        };
+
+        // Iniciar movimiento constante
+        moverEnemigo(enemigo, pos, area);
+    };
+    
+    // --- Retraso para asegurar que el área esté renderizada ---
+    setTimeout(() => {
+        // Crear el primer enemigo y los siguientes
+        for (let i = 0; i < Math.min(3, nivel.objetivo); i++) { 
+            setTimeout(crearEnemigo, i * 1000 + 100); 
+        }
+    }, 100);
+
+    return {};
+}
+
+        // Nivel 4: CARD STRATEGY - MODIFICADO para corregir bug y añadir imagen
+        function inicializarCardStrategy(nivel) {
+            let vidaJugador = nivel.vidaInicial;
+            let vidaRival = nivel.vidaInicial;
+            let aturdidoRival = 0;
+            let escudoJugador = 0;
+            const juegoDinamico = document.getElementById('juego-dinamico');
+
+            juegoDinamico.innerHTML = `
+                <div id="arena-batalla">
+                    <div id="vida-jugador" class="vida-jugador">Jugador: ${'❤️'.repeat(vidaJugador)}</div>
+                    <div id="vida-rival" class="vida-rival">El Olvido: ${'💔'.repeat(vidaRival)}</div>
+                </div>
+                <div id="log-batalla">Inicia la Batalla de Corazones.</div>
+                <div id="cartas-jugador"></div>
+            `;
+
+            const escribirLog = (mensaje) => {
+                const log = document.getElementById('log-batalla');
+                log.innerHTML += `<p style="margin: 3px 0; font-size: 0.9em;">- ${mensaje}</p>`;
+                log.scrollTop = log.scrollHeight;
+            };
+
+            const actualizarVida = () => {
+                document.getElementById('vida-jugador').innerHTML = `Jugador: ${'❤️'.repeat(Math.max(0, vidaJugador))}`;
+                document.getElementById('vida-rival').innerHTML = `El Olvido: ${'💔'.repeat(Math.max(0, vidaRival))}`;
+            };
+
+            // MODIFICADO: FUNCIÓN DE FIN DE JUEGO (Solución de Bug)
+            const comprobarFinJuego = () => {
+                // Se añadió la lógica para ocultar las cartas al finalizar el juego
+                if (vidaRival <= 0 || vidaJugador <= 0) {
+                    document.getElementById('cartas-jugador').style.display = 'none'; 
+                }
+
+                if (vidaRival <= 0) {
+                    escribirLog(`¡VICTORIA! ${nivel.mensajeVictoria}`);
+                    document.getElementById('boton-siguiente').textContent = 'Siguiente Nivel >>';
+                    document.getElementById('boton-siguiente').onclick = avanzarNivel;
+                    document.getElementById('boton-siguiente').style.display = 'block';
+                    return true;
+                }
+                if (vidaJugador <= 0) {
+                    escribirLog("DERROTA. El Olvido te consumió.");
+                    document.getElementById('boton-siguiente').textContent = 'Volver a Intentar';
+                    document.getElementById('boton-siguiente').onclick = () => cargarNivel(nivelActual);
+                    document.getElementById('boton-siguiente').style.display = 'block';
+                    return true;
+                }
+                return false;
+            };
+
+            const turnoRival = () => {
+                if (aturdidoRival > 0) {
+                    escribirLog(`El Olvido está aturdido. Turno perdido. (Restantes: ${aturdidoRival})`);
+                    aturdidoRival--;
+                    return;
+                }
+
+                escribirLog("El Olvido ataca...");
+                // Elige un ataque al azar
+                const dañoRival = Math.floor(Math.random() * 2) + 1; // 1 o 2 de daño
+
+                let dañoFinal = dañoRival;
+                if (escudoJugador > 0) {
+                    dañoFinal = Math.max(0, dañoRival - escudoJugador);
+                    escudoJugador = Math.max(0, escudoJugador - dañoRival);
+                    escribirLog(`¡Escudo! El daño se reduce a ${dañoFinal}. Escudo restante: ${escudoJugador}`);
+                } else {
+                    escribirLog(`Recibes ${dañoRival} de daño.`);
+                }
+
+                vidaJugador -= dañoFinal;
+                mostrarFeedback("¡Golpe del olvido! 💔");
+                actualizarVida();
+            };
+
+            // MODIFICADO: FUNCIÓN PARA RENDERIZAR CARTAS (Adición de imagen/icono)
+            const renderCartas = () => {
+                const contenedor = document.getElementById('cartas-jugador');
+                contenedor.innerHTML = '';
+                // Robar 3 cartas al azar
+                const cartasDisponibles = nivel.cartas.sort(() => 0.5 - Math.random()).slice(0, 3); 
+                
+                cartasDisponibles.forEach(carta => {
+                    const boton = document.createElement('button');
+                    boton.className = 'carta-amor';
+                    
+                    // Contenido del botón con la nueva estructura de imagen/icono
+                    boton.innerHTML = `
+                        <div class="carta-imagen" style="${carta.imageUrl && carta.imageUrl.startsWith('URL_') === false ? `background-image: url('${carta.imageUrl}');` : ''}">${carta.icon || ''}</div>
+                        ${carta.nombre}
+                    `;
+
+                    boton.onclick = () => usarCarta(carta, cartasDisponibles);
+                    contenedor.appendChild(boton);
+                });
+            };
+
+            const usarCarta = (carta) => {
+                document.querySelectorAll('.carta-amor').forEach(btn => btn.disabled = true);
+                
+                // Reiniciar escudo al inicio del turno del jugador
+                escudoJugador = 0; 
+
+                // Efectos de la carta del jugador
+                escribirLog(`Usas la carta: ${carta.nombre}.`);
+                mostrarFeedback(carta.mensaje || "¡Efecto sorpresa!");
+
+                if (carta.daño) vidaRival -= carta.daño;
+                if (carta.curacion) vidaJugador += carta.curacion;
+                if (carta.aturdir) aturdidoRival = Math.max(1, aturdidoRival + carta.aturdir); // Asegura al menos 1 turno
+                if (carta.escudo) escudoJugador += carta.escudo;
+
+                actualizarVida();
+
+                if (!comprobarFinJuego()) {
+                    setTimeout(() => {
+                        turnoRival();
+                        if (!comprobarFinJuego()) {
+                            renderCartas();
+                            // Habilitar cartas después del turno del rival
+                            document.querySelectorAll('.carta-amor').forEach(btn => btn.disabled = false);
+                        }
+                    }, 1500);
+                }
+            };
+            
+            renderCartas();
+            return {};
+        }
+        // FIN MODIFICACION NIVEL 4
+
+        
+        // Nivel 6: VOLLEYBALL RHYTHM
+        function inicializarVolleyballRhythm(nivel) {
+            let puntos = 0;
+            let juegoActivo = true;
+            const juegoDinamico = document.getElementById('juego-dinamico');
+            juegoDinamico.innerHTML = `
+                <p>Puntos: <span id="contador-puntos">0/${nivel.objetivoPuntos}</span></p>
+                <div id="cancha-voleibol">
+                    <div id="ball">🏐</div>
+                    <div id="prompt-tecla"></div>
+                </div>
+            `;
+            const ball = document.getElementById('ball');
+            const promptTeclas = document.getElementById('prompt-tecla');
+            const teclas = Object.keys(nivel.jugadas);
+            let teclaEsperada = '';
+
+            const checkWin = () => {
+                if (puntos >= nivel.objetivoPuntos) {
+                    juegoActivo = false;
+                    mostrarFeedback(`¡Nivel ${nivel.id} COMPLETO! ¡${nivel.mensajesAcierto[puntos % nivel.mensajesAcierto.length]}!`);
+                    document.getElementById('boton-siguiente').textContent = 'Siguiente Nivel >>';
+                    document.getElementById('boton-siguiente').onclick = avanzarNivel;
+                    document.getElementById('boton-siguiente').style.display = 'block';
+                }
+            };
+
+            const generarJugada = () => {
+                if (!juegoActivo) return;
+
+                teclaEsperada = teclas[Math.floor(Math.random() * teclas.length)];
+                const accion = nivel.jugadas[teclaEsperada];
+                
+                // Mover la pelota al centro y mostrar el prompt
+                ball.style.transition = 'all 0.5s ease-out';
+                ball.style.left = 'calc(50% - 15px)';
+                ball.style.top = '135px';
+
+                promptTeclas.textContent = `Presiona [${teclaEsperada}] para ${accion}`;
+                promptTeclas.style.display = 'block';
+
+                // Penalización si no se presiona a tiempo
+                setTimeout(() => {
+                    if (juegoActivo && promptTeclas.style.display !== 'none') {
+                        fallarJugada();
+                    }
+                }, 1500); // 1.5 segundos para reaccionar
+            };
+            
+            const fallarJugada = () => {
+                mostrarFeedback(`❌ ${nivel.mensajeFallo}`);
+                promptTeclas.style.display = 'none';
+                ball.style.top = '300px'; // La pelota cae
+                teclaEsperada = '';
+                setTimeout(generarJugada, 2000);
+            };
+
+            const acertarJugada = () => {
+                puntos++;
+                document.getElementById('contador-puntos').textContent = `${puntos}/${nivel.objetivoPuntos}`;
+                mostrarFeedback(`✅ ${nivel.mensajesAcierto[puntos % nivel.mensajesAcierto.length]}`);
+                promptTeclas.style.display = 'none';
+                
+                // Simular el remate de la pelota
+                ball.style.transition = 'all 0.5s ease-in';
+                ball.style.left = `${Math.random() * 80 + 10}%`;
+                ball.style.top = '10px';
+
+                if (!checkWin()) {
+                    setTimeout(generarJugada, 2000);
+                }
+            };
+
+            const listener = (e) => {
+                if (!juegoActivo || teclaEsperada === '' || promptTeclas.style.display === 'none') return;
+                
+                if (e.key.toUpperCase() === teclaEsperada) {
+                    acertarJugada();
+                } else if (teclas.includes(e.key.toUpperCase())) {
+                    fallarJugada();
+                }
+            };
+
+            document.addEventListener('keydown', listener);
+
+            setTimeout(generarJugada, 1000); // Iniciar el juego
+            
+            return {
+                limpiar: () => document.removeEventListener('keydown', listener)
+            };
+        }
+
+        // Nivel 7: PENALTY KICK
+        function inicializarPenaltyKick(nivel) {
+            let goles = 0;
+            const objetivo = nivel.objetivoGoles;
+            const juegoDinamico = document.getElementById('juego-dinamico');
+            let juegoActivo = true;
+
+            juegoDinamico.innerHTML = `
+                <p>Goles: <span id="contador-goles">0/${objetivo}</span></p>
+                <div id="campo-futbol">
+                    <div id="porteria"></div>
+                    <div id="jugador" style="left: 240px;">👨🏻‍🍳</div>
+                    <div id="balon" style="left: 242.5px;">⚽</div>
+                </div>
+                <p>Usa ⬅️ y ➡️ para moverte, o haz clic en el área para disparar.</p>
+                <p>Posición: <span id="posicion-jugador">0</span></p>
+            `;
+
+            const jugador = document.getElementById('jugador');
+            const balon = document.getElementById('balon');
+            let posicionActual = 0; // -100 (izquierda) a 100 (derecha)
+
+            const checkWin = () => {
+                if (goles >= objetivo) {
+                    juegoActivo = false;
+                    mostrarFeedback(`¡Nivel ${nivel.id} COMPLETO! ${nivel.mensajeVictoria}`);
+                    document.getElementById('boton-siguiente').textContent = 'Siguiente Nivel >>';
+                    document.getElementById('boton-siguiente').onclick = avanzarNivel;
+                    document.getElementById('boton-siguiente').style.display = 'block';
+                }
+            };
+            
+            const moverJugador = (cantidad) => {
+                if (!juegoActivo) return;
+                posicionActual = Math.max(-100, Math.min(100, posicionActual + cantidad * 10)); // Mover en unidades de 10
+                const left = 240 + posicionActual;
+                jugador.style.left = `${left}px`;
+                balon.style.left = `${left + 2.5}px`;
+                document.getElementById('posicion-jugador').textContent = posicionActual;
+            };
+
+            const disparar = () => {
+                if (!juegoActivo) return;
+                juegoActivo = false; // Bloquear hasta el resultado
+                
+                balon.style.transition = 'all 0.5s linear';
+                
+                // Simulación: La pelota va al centro de la portería
+                const balonTarget = 242.5; 
+                balon.style.left = `${balonTarget}px`; 
+                balon.style.bottom = '300px';
+
+                // Simulación del portero (se mueve a una posición al azar en el eje X)
+                const porteroPos = Math.random() * 100 - 50; // -50 a 50 de desplazamiento
+                const porteroTarget = 250 + porteroPos; 
+
+                // Comparar si la posición del jugador está lejos del movimiento del portero
+                // Posición del jugador es 'posicionActual' (-100 a 100).
+                const distanciaAlPortero = Math.abs(posicionActual - porteroPos);
+                
+                setTimeout(() => {
+                    balon.style.transition = 'none';
+                    balon.style.bottom = '50px'; // Restablecer posición vertical
+                    
+                    if (distanciaAlPortero > 40) {
+                        goles++;
+                        document.getElementById('contador-goles').textContent = `${goles}/${objetivo}`;
+                        const mensaje = nivel.mensajesGol[goles - 1] || nivel.mensajesGol[0];
+                        mostrarFeedback(`⚽️ GOL! ${mensaje}`);
+                    } else {
+                        mostrarFeedback(`❌ ${nivel.mensajeFallo}`);
+                    }
+                    
+                    juegoActivo = true; // Desbloquear
+                    checkWin();
+                }, 500);
+            };
+
+            const listener = (e) => {
+                if (e.key === 'ArrowLeft') moverJugador(-5);
+                else if (e.key === 'ArrowRight') moverJugador(5);
+                else if (e.key === ' ') disparar();
+            };
+
+            document.addEventListener('keydown', listener);
+            document.getElementById('campo-futbol').onclick = disparar;
+            
+            window.moverJugador = moverJugador;
+            window.disparar = disparar;
+
+            return { 
+                limpiar: () => { 
+                    document.removeEventListener('keydown', listener); 
+                    document.getElementById('campo-futbol').onclick = null;
+                },
+                listener: listener
+            };
+        }
+
+        // Nivel 8: SHELL GAME
+        let corazonPos = 0;
+        let movimientosRestantes = 0;
+        let mezclarInterval = null;
+
+        function inicializarShellGame(nivel) {
+            let rondaActual = 0;
+            let vidas = 3;
+            let juegoActivo = true;
+            const juegoDinamico = document.getElementById('juego-dinamico');
+
+            juegoDinamico.innerHTML = `
+                <p>Vidas: <span id="contador-vidas">${'💔'.repeat(vidas)}</span></p>
+                <div id="shell-table">
+                    <div class="shell" data-index="0">🧋</div>
+                    <div class="shell" data-index="1">🧋</div>
+                    <div class="shell" data-index="2">🧋</div>
+                </div>
+                <button id="boton-iniciar-ronda" onclick="iniciarRondaShell()">🎲 Empezar Ronda 1</button>
+            `;
+
+            const checkWin = () => {
+                if (rondaActual >= nivel.rondas.length) {
+                    mostrarFeedback(`¡Lo lograste! ${nivel.mensajeFinal}`);
+                    document.getElementById('shell-table').innerHTML = `<p style="font-size: 2em; color: var(--color-principal);">T E A M O ❤️</p>`;
+                    juegoActivo = false;
+                    document.getElementById('boton-siguiente').textContent = 'Siguiente Nivel >>';
+                    document.getElementById('boton-siguiente').onclick = avanzarNivel;
+                    document.getElementById('boton-siguiente').style.display = 'block';
+                    return true;
+                }
+                return false;
+            };
+
+            const checkGameOver = () => {
+                if (vidas <= 0) {
+                    mostrarFeedback("¡Juego Terminado! Se te acabaron las vidas.");
+                    juegoActivo = false;
+                    document.getElementById('boton-siguiente').textContent = 'Volver a Intentar';
+                    document.getElementById('boton-siguiente').onclick = () => cargarNivel(nivelActual);
+                    document.getElementById('boton-siguiente').style.display = 'block';
+                    return true;
+                }
+                return false;
+            };
+
+            const iniciarRondaShell = () => {
+                if (!juegoActivo || mezclarInterval) return;
+
+                document.getElementById('boton-iniciar-ronda').style.display = 'none';
+                document.getElementById('mensaje-feedback').textContent = `Ronda ${rondaActual + 1}: ¡Mira bien!`;
+
+                const shells = document.querySelectorAll('.shell');
+                shells.forEach(s => s.onclick = null); // Desactivar clics durante la mezcla
+                
+                // Limpiar iconos y establecer el corazón
+                shells.forEach(s => s.innerHTML = '🧋');
+                corazonPos = Math.floor(Math.random() * 3);
+                shells[corazonPos].innerHTML = '❤️'; // Revelar corazón
+                
+                const ronda = nivel.rondas[rondaActual];
+                const velocidad = ronda.velocidad;
+                movimientosRestantes = 10;
+                
+                setTimeout(() => {
+                    shells.forEach(s => s.innerHTML = '🧋'); // Ocultar corazón
+                    mezclarInterval = setInterval(() => { mezclarShells(shells, velocidad); }, velocidad);
+                    setTimeout(() => terminarMezcla(shells, ronda), movimientosRestantes * velocidad * 1.5);
+                }, 1000);
+            };
+
+            const mezclarShells = (shells, velocidad) => {
+                if (movimientosRestantes <= 0) return;
+
+                // Elegir dos índices diferentes al azar
+                let i1, i2;
+                do {
+                    i1 = Math.floor(Math.random() * 3);
+                    i2 = Math.floor(Math.random() * 3);
+                } while (i1 === i2);
+
+                // Actualizar la posición del corazón internamente
+                if (corazonPos === i1) corazonPos = i2;
+                else if (corazonPos === i2) corazonPos = i1;
+
+                // Simular animación (solo visual) - usando flexbox order
+                const order1 = shells[i1].style.order || i1;
+                const order2 = shells[i2].style.order || i2;
+                
+                shells[i1].style.order = order2;
+                shells[i2].style.order = order1;
+
+                movimientosRestantes--;
+            };
+
+            const terminarMezcla = (shells, ronda) => {
+                clearInterval(mezclarInterval);
+                mezclarInterval = null;
+                document.getElementById('mensaje-feedback').textContent = '¿Dónde está el corazón? ¡Elige un vaso!';
+                shells.forEach(s => s.onclick = () => seleccionarVaso(parseInt(s.dataset.index), corazonPos, ronda));
+            };
+
+            const seleccionarVaso = (seleccion, correcta, ronda) => {
+                if (!juegoActivo) return;
+                document.querySelectorAll('.shell').forEach(s => s.onclick = null);
+
+                document.querySelectorAll('.shell')[correcta].innerHTML = '❤️'; // Revelar el correcto
+
+                if (seleccion === correcta) {
+                    mostrarFeedback(`✅ ${ronda.acierto}`);
+                    rondaActual++;
+                    if (!checkWin()) {
+                        document.getElementById('boton-iniciar-ronda').textContent = `🎲 Empezar Ronda ${rondaActual + 1}`;
+                        document.getElementById('boton-iniciar-ronda').style.display = 'block';
+                    }
+                } else {
+                    vidas--;
+                    document.getElementById('contador-vidas').textContent = '💔'.repeat(vidas);
+                    mostrarFeedback(`❌ ${ronda.fallo || "Fallaste. Intenta de nuevo."}`);
+                    
+                    if (!checkGameOver()) {
+                        setTimeout(() => {
+                            // Volver a iniciar la misma ronda si falló
+                            document.getElementById('boton-iniciar-ronda').textContent = `🎲 Reintentar Ronda ${rondaActual + 1}`;
+                            document.getElementById('boton-iniciar-ronda').style.display = 'block';
+                        }, 1500);
+                    }
+                }
+                
+                // Ocultar el corazón para el siguiente turno
+                setTimeout(() => document.querySelectorAll('.shell').forEach(s => s.innerHTML = '🧋'), 1500); 
+            };
+            
+            window.iniciarRondaShell = iniciarRondaShell;
+            window.seleccionarVaso = seleccionarVaso;
+
+            return {
+                limpiar: () => clearInterval(mezclarInterval)
+            };
+        }
+
+        // Nivel 9: JIGSAW PUZZLE
+        function inicializarJigsawPuzzle(nivel) {
+            let piezasCorrectas = 0;
+            const totalPiezas = nivel.tamano;
+            let juegoActivo = true;
+            const gridSize = Math.sqrt(totalPiezas); // Asumiendo que es un cuadrado (5x5)
+            const pieceSize = 100 / gridSize; // Tamaño de cada pieza en %
+            const juegoDinamico = document.getElementById('juego-dinamico');
+
+            // Aseguramos que la URL esté en el CSS del elemento
+            const tempDiv = document.createElement('div');
+            tempDiv.id = 'puzzle-area';
+            juegoDinamico.appendChild(tempDiv);
+
+            const area = document.getElementById('puzzle-area');
+            area.style.backgroundImage = `url('${imageURLs.puzzle}')`; // Necesario para el fondo del contenedor
+
+            juegoDinamico.innerHTML = `
+                <p>Piezas correctas: <span id="contador-puzzle">0/${totalPiezas}</span></p>
+                <div id="puzzle-area" style="width: 400px; height: 400px; margin: 20px auto; border: 2px solid var(--color-secundario); background-image: url('${imageURLs.puzzle}'); background-size: 400px 400px; position: relative; display: grid; grid-template-columns: repeat(${gridSize}, 1fr);"></div>
+            `;
+            const puzzleArea = document.getElementById('puzzle-area');
+
+            // Simulación de piezas (usando números para verificar posición)
+            const piezas = Array.from({ length: totalPiezas }, (_, i) => i);
+            
+            // Reordenar las piezas para que no estén en orden
+            piezas.sort(() => 0.5 - Math.random()); 
+
+            piezas.forEach((correctIndex, pieceIndex) => {
+                const pieza = document.createElement('div');
+                pieza.className = 'puzzle-piece';
+                pieza.dataset.correct = correctIndex;
+                pieza.dataset.current = pieceIndex; // La posición en la que aparece
+                
+                // Calcular la posición de fondo de la imagen para la pieza
+                const x = correctIndex % gridSize;
+                const y = Math.floor(correctIndex / gridSize);
+                
+                pieza.style.setProperty('--bg-x', `-${x * pieceSize}%`);
+                pieza.style.setProperty('--bg-y', `-${y * pieceSize}%`);
+                
+                // La pieza solo muestra su contenido correcto si está en la posición 0 (simulación de arrastrar)
+                pieza.style.gridColumnStart = (pieceIndex % gridSize) + 1;
+                pieza.style.gridRowStart = Math.floor(pieceIndex / gridSize) + 1;
+                
+                // La simplificación es que el usuario solo puede "colocar" la pieza haciendo clic en la posición inicial (por la complejidad del drag and drop)
+                pieza.onclick = () => {
+                    if (!juegoActivo || pieza.classList.contains('placed')) return;
+                    
+                    // En el juego real, esto simularía arrastrar y soltar la pieza a su posición final.
+                    // Aquí, por simplicidad: La pieza 'pieceIndex' debe ir a la posición 'correctIndex'.
+                    // Para que esto funcione, la pieza en la posición 'pieceIndex' debe ser la que tiene el 'correctIndex'.
+                    // Como reordenamos, la lógica se simplifica:
+                    
+                    // Si la pieza que está en la posición 'pieceIndex' es la que debe ir en la posición 'correctIndex'
+                    // Y queremos que el usuario solo haga clic para "colocarla"
+                    
+                    // Asumiremos que el usuario hace clic en el orden correcto de 0 a 24.
+                    if (piezasCorrectas === pieceIndex) {
+                        pieza.classList.add('placed');
+                        piezasCorrectas++;
+                        document.getElementById('contador-puzzle').textContent = `${piezasCorrectas}/${totalPiezas}`;
+                        mostrarFeedback(nivel.mensajesUnion[piezasCorrectas % nivel.mensajesUnion.length]);
+                        
+                        if (piezasCorrectas === totalPiezas) {
+                            mostrarFeedback(`¡Nivel ${nivel.id} COMPLETADO! ${nivel.mensajeFinal}`);
+                            juegoActivo = false;
+                            document.getElementById('boton-siguiente').textContent = 'Siguiente Nivel >>';
+                            document.getElementById('boton-siguiente').onclick = avanzarNivel;
+                            document.getElementById('boton-siguiente').style.display = 'block';
+                        }
+                    } else {
+                        mostrarFeedback("¡Esa no es la pieza correcta ahora! Tienes que colocarlas en orden.");
+                    }
+                };
+                
+                puzzleArea.appendChild(pieza);
+            });
+            
+            document.getElementById('contador-puzzle').textContent = `${piezasCorrectas}/${totalPiezas}`;
+            return {};
+        }
+
+        // Nivel 10: QUIZ MULTIPLE
+        function inicializarQuizMultiple(nivel) {
+            let preguntaActual = 0;
+            const juegoDinamico = document.getElementById('juego-dinamico');
+            juegoDinamico.innerHTML = `<div id="quiz-movie-area"></div>`;
+            const quizArea = document.getElementById('quiz-movie-area');
+
+            const cargarPregunta = () => {
+                if (preguntaActual >= nivel.preguntas.length) {
+                    mostrarFeedback(`¡Nivel ${nivel.id} COMPLETO! ${nivel.mensajeFinal}`);
+                    document.getElementById('boton-siguiente').textContent = 'Siguiente Nivel >>';
+                    document.getElementById('boton-siguiente').onclick = avanzarNivel;
+                    document.getElementById('boton-siguiente').style.display = 'block';
+                    return;
+                }
+                
+                document.getElementById('etapa-actual').textContent = `Nivel 10 (Pregunta ${preguntaActual + 1}/${nivel.preguntas.length})`;
+                const pregunta = nivel.preguntas[preguntaActual];
+                
+                quizArea.innerHTML = `
+                    <p style="font-size: 1.2em; font-style:italic;">"${pregunta.frase}"</p>
+                    <p>¿A qué película pertenece?</p>
+                    <div id="quiz-movie-options"></div>
+                `;
+                
+                const opcionesDiv = document.getElementById('quiz-movie-options');
+                pregunta.opciones.forEach((opcion, index) => {
+                    const btn = document.createElement('button');
+                    btn.textContent = opcion;
+                    btn.onclick = () => verificarRespuestaMovie(index, pregunta.respuestaCorrecta);
+                    opcionesDiv.appendChild(btn);
+                });
+            };
+
+            const verificarRespuestaMovie = (seleccion, correcta) => {
+                const botones = document.querySelectorAll('#quiz-movie-options button');
+                botones.forEach(btn => btn.disabled = true);
+
+                if (seleccion === correcta) {
+                    botones[seleccion].classList.add('correcta');
+                    mostrarFeedback("✅ ¡Acierto! Destellos dorados y un corazón flotando. ✨💖");
+                    preguntaActual++;
+                    setTimeout(cargarPregunta, 1500);
+                } else {
+                    botones[seleccion].classList.add('incorrecta');
+                    botones[correcta].classList.add('correcta');
+                    mostrarFeedback("❌ ¡Incorrecto! ¡Pero eres mi favorito igual! 😅");
+                    // No hay avance de pregunta, el usuario debe reiniciar el nivel o seguir
+                    document.getElementById('boton-siguiente').textContent = 'Volver a Intentar Nivel';
+                    document.getElementById('boton-siguiente').onclick = () => cargarNivel(nivelActual);
+                    document.getElementById('boton-siguiente').style.display = 'block';
+                }
+            };
+            
+            cargarPregunta();
+            window.verificarRespuestaMovie = verificarRespuestaMovie;
+            return {};
+        }
+
+        // Nivel 11: MEMORY GAME
+        function inicializarMemoryGame(nivel) {
+            let matchedPairs = 0;
+            let firstCard = null;
+            let cards = [];
+            let lockBoard = false;
+            let juegoActivo = true;
+            const numPares = nivel.numPares;
+            
+            const juegoDinamico = document.getElementById('juego-dinamico');
+            juegoDinamico.innerHTML = `
+                <p>Pares encontrados: <span id="matched-pairs">0/${numPares}</span></p>
+                <div id="memory-grid" style="grid-template-columns: repeat(5, 1fr);"></div>
+            `;
+            const grid = document.getElementById('memory-grid');
+
+            // Crear los valores (emojis de amor)
+            const valores = nivel.mensajesAcierto.slice(0, numPares);
+            const valoresDoble = [...valores, ...valores];
+            valoresDoble.sort(() => 0.5 - Math.random());
+
+            valoresDoble.forEach((valor, index) => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.dataset.value = valor;
+                card.dataset.index = index;
+                card.innerHTML = '<div class="card-inner">?</div>';
+                card.onclick = () => flipCard(card);
+                grid.appendChild(card);
+            });
+            
+            function flipCard(card) {
+                if (!juegoActivo || lockBoard || card === firstCard || card.classList.contains('matched')) return;
+
+                card.classList.add('flipped');
+                card.querySelector('.card-inner').textContent = card.dataset.value;
+
+                if (!firstCard) {
+                    firstCard = card;
+                    return;
+                }
+
+                cards.push(card);
+                lockBoard = true;
+                checkForMatch();
+            }
+
+            function checkForMatch() {
+                const secondCard = cards[0];
+                let isMatch = firstCard.dataset.value === secondCard.dataset.value;
+
+                isMatch ? disableCards(secondCard) : unflipCards(secondCard);
+            }
+
+            function disableCards(secondCard) {
+                firstCard.classList.add('matched');
+                secondCard.classList.add('matched');
+                matchedPairs++;
+                document.getElementById('matched-pairs').textContent = `${matchedPairs}/${numPares}`;
+                mostrarFeedback(nivel.mensajesAcierto[matchedPairs - 1] || "¡Par encontrado!");
+                resetBoard();
+                
+                if (matchedPairs === numPares) {
+                    juegoActivo = false;
+                    mostrarFeedback(`¡Nivel ${nivel.id} COMPLETO! ${nivel.mensajeFinal}`);
+                    document.getElementById('boton-siguiente').textContent = 'Siguiente Nivel >>';
+                    document.getElementById('boton-siguiente').onclick = avanzarNivel;
+                    document.getElementById('boton-siguiente').style.display = 'block';
+                }
+            }
+
+            function unflipCards(secondCard) {
+                setTimeout(() => {
+                    firstCard.classList.remove('flipped');
+                    secondCard.classList.remove('flipped');
+                    firstCard.querySelector('.card-inner').textContent = '?';
+                    secondCard.querySelector('.card-inner').textContent = '?';
+                    resetBoard();
+                }, 1000);
+            }
+
+            function resetBoard() {
+                [firstCard, cards, lockBoard] = [null, [], false];
+            }
+
+            window.flipCard = flipCard;
+            return {};
+        }
+
+        // Nivel 12: CROSSWORD QUIZ
+        function inicializarCrosswordQuiz(nivel) {
+            const juegoDinamico = document.getElementById('juego-dinamico');
+            juegoDinamico.innerHTML = `
+                <p>Responde las preguntas. Escribe las respuestas en **MAYÚSCULAS**.</p>
+                <div id="crossword-questions"></div>
+            `;
+            const questionsDiv = document.getElementById('crossword-questions');
+            let respuestasCorrectas = 0;
+            const totalPreguntas = nivel.preguntas.length;
+
+            nivel.preguntas.forEach((item, index) => {
+                const qDiv = document.createElement('div');
+                qDiv.className = 'question-item';
+                qDiv.innerHTML = `
+                    <label for="q-${index}">${index + 1}. ${item.pregunta}</label>
+                    <input type="text" id="q-${index}" data-correct="${item.respuesta}" data-mensaje="${item.mensaje}" onchange="verificarRespuestaCrossword(this, ${totalPreguntas})">
+                `;
+                questionsDiv.appendChild(qDiv);
+            });
+
+            window.verificarRespuestaCrossword = (input, total) => {
+                const respuestaUsuario = input.value.toUpperCase().trim().replace(/[^A-Z0-9\s]/g, ''); // Limpia caracteres especiales
+                const respuestaCorrecta = input.dataset.correct.toUpperCase().trim().replace(/[^A-Z0-9\s]/g, '');
+
+                if (input.disabled) return;
+
+                if (respuestaUsuario === respuestaCorrecta) {
+                    input.disabled = true;
+                    input.style.backgroundColor = '#d8f8d8';
+                    respuestasCorrectas++;
+                    mostrarFeedback(`✅ ¡Correcto! ${input.dataset.mensaje}`);
+                    
+                    if (respuestasCorrectas === total) {
+                        mostrarFeedback(`¡Nivel ${nivel.id} COMPLETO! ${nivel.mensajeFinal}`);
+                        document.getElementById('boton-siguiente').textContent = 'Siguiente Nivel >>';
+                        document.getElementById('boton-siguiente').onclick = avanzarNivel;
+                        document.getElementById('boton-siguiente').style.display = 'block';
+                    }
+                } else if (respuestaUsuario.length >= respuestaCorrecta.length) {
+                    mostrarFeedback("❌ ¡Incorrecto! Sigue intentándolo. (Asegúrate de usar MAYÚSCULAS)");
+                }
+            };
+            
+            return {};
+        }
+
+        // Nivel 13: CLAW MACHINE
+        let clawInterval = null;
+        function inicializarClawMachine(nivel) {
+            let intentosRestantes = nivel.intentos;
+            let mensajesRecogidos = [];
+            let juegoActivo = true;
+            let clawPosition = 0; // 0 (izquierda) a 100 (derecha)
+            let direccion = 1;
+
+            const juegoDinamico = document.getElementById('juego-dinamico');
+            juegoDinamico.innerHTML = `
+                <p>Intentos: <span id="contador-intentos">${intentosRestantes}/${nivel.intentos}</span> | Premios: <span id="premios-recogidos">0</span></p>
+                <div id="claw-machine-area">
+                    <div id="claw-track"></div>
+                    <div id="claw" style="left: 5%;">👇</div>
+                    <div class="prize-object" style="left: 10%;">🧸</div>
+                    <div class="prize-object" style="left: 45%;">💎</div>
+                    <div class="prize-object" style="left: 70%;">🍪</div>
+                </div>
+                <button id="claw-button" onclick="detenerGarra()">ATRAPAR</button>
+                <div id="resumen-premios" style="text-align: left; margin-top: 15px;"></div>
+            `;
+            const claw = document.getElementById('claw');
+            const clawButton = document.getElementById('claw-button');
+
+            const moverGarra = () => {
+                clawPosition += direccion;
+                if (clawPosition >= 90 || clawPosition <= 0) {
+                    direccion *= -1;
+                }
+                claw.style.left = `${clawPosition}%`;
+            };
+
+            const iniciarMovimiento = () => {
+                if (!juegoActivo || intentosRestantes <= 0) return;
+                clawButton.style.display = 'block';
+                claw.style.top = '10px';
+                claw.innerHTML = '👇';
+                clawInterval = setInterval(moverGarra, 30);
+            };
+
+            const detenerGarra = () => {
+                if (intentosRestantes <= 0) return;
+                clearInterval(clawInterval);
+                clawButton.style.display = 'none';
+
+                claw.style.transition = 'all 1s ease-in-out';
+                claw.style.top = '250px'; // Bajar la garra
+
+                intentosRestantes--;
+                document.getElementById('contador-intentos').textContent = `${intentosRestantes}/${nivel.intentos}`;
+                
+                setTimeout(() => {
+                    claw.style.transition = 'all 0.5s ease-in-out';
+                    claw.style.top = '10px'; // Subir la garra
+
+                    // Simulación de captura (Probabilidad del 60%)
+                    if (Math.random() < 0.6) {
+                        const premio = nivel.objetos[Math.floor(Math.random() * nivel.objetos.length)];
+                        mensajesRecogidos.push(premio.mensaje);
+                        claw.innerHTML = '✅';
+                        mostrarFeedback(`✅ ¡Atrapado! ${premio.mensaje}`);
+                    } else {
+                        const mensajeFallo = nivel.mensajesFallo[Math.floor(Math.random() * nivel.mensajesFallo.length)];
+                        claw.innerHTML = '❌';
+                        mostrarFeedback(`❌ ${mensajeFallo}`);
+                    }
+                    
+                    document.getElementById('premios-recogidos').textContent = mensajesRecogidos.length;
+
+                    if (intentosRestantes > 0) {
+                        setTimeout(() => {
+                            claw.innerHTML = '👇';
+                            claw.style.transition = 'none';
+                            iniciarMovimiento();
+                        }, 1000);
+                    } else {
+                        terminarClawGame();
+                    }
+                }, 1500);
+            };
+
+            const terminarClawGame = () => {
+                juegoActivo = false;
+                let resumenHTML = '<h4>Resumen de Premios Recogidos:</h4>';
+                resumenHTML += mensajesRecogidos.map(m => `<li>${m}</li>`).join('');
+                document.getElementById('resumen-premios').innerHTML = resumenHTML;
+                mostrarFeedback(`¡Nivel ${nivel.id} COMPLETO!`);
+                clawButton.style.display = 'none';
+                document.getElementById('boton-siguiente').textContent = 'Siguiente Nivel >>';
+                document.getElementById('boton-siguiente').onclick = avanzarNivel;
+                document.getElementById('boton-siguiente').style.display = 'block';
+            };
+
+            iniciarMovimiento();
+            
+            window.detenerGarra = detenerGarra;
+
+            return { 
+                limpiar: () => clearInterval(clawInterval) 
+            };
+        }
+
+        // Nivel 15: CHAT SIM
+        function inicializarChatSim(nivel) {
+            let turnoActual = 0;
+            const juegoDinamico = document.getElementById('juego-dinamico');
+            juegoDinamico.innerHTML = `
+                <div id="chat-window"></div>
+                <div id="options-chat" style="display:flex; justify-content:space-between; flex-wrap: wrap; gap: 10px;"></div>
+            `;
+            const chatWindow = document.getElementById('chat-window');
+            const optionsChat = document.getElementById('options-chat');
+            let juegoActivo = true;
+
+            const agregarMensaje = (texto, remitente) => {
+                const msgDiv = document.createElement('div');
+                msgDiv.className = remitente === 'bot' ? 'message-bot' : 'message-player';
+                msgDiv.textContent = texto;
+                chatWindow.appendChild(msgDiv);
+                chatWindow.scrollTop = chatWindow.scrollHeight; // Auto-scroll
+            };
+
+            const cargarTurno = () => {
+                if (turnoActual >= nivel.turnos.length) {
+                    terminarChatSim();
+                    return;
+                }
+                
+                const turno = nivel.turnos[turnoActual];
+                
+                // Mensaje del bot
+                agregarMensaje(turno.bot, 'bot');
+                
+                // Opciones del jugador
+                optionsChat.innerHTML = '';
+                turno.opciones.forEach(opcion => {
+                    const btn = document.createElement('button');
+                    btn.textContent = opcion;
+                    btn.onclick = () => responderChat(opcion);
+                    optionsChat.appendChild(btn);
+                });
+            };
+
+            const responderChat = (respuesta) => {
+                optionsChat.innerHTML = ''; // Ocultar opciones
+                agregarMensaje(respuesta, 'player');
+                turnoActual++;
+                setTimeout(cargarTurno, 1500); // Simular el tiempo de respuesta del bot
+            };
+
+            const terminarChatSim = () => {
+                juegoActivo = false;
+                agregarMensaje(nivel.mensajeFinal, 'bot');
+                mostrarFeedback(`¡Nivel ${nivel.id} COMPLETO!`);
+                optionsChat.style.display = 'none';
+                document.getElementById('boton-siguiente').textContent = 'Siguiente Nivel >>';
+                document.getElementById('boton-siguiente').onclick = avanzarNivel;
+                document.getElementById('boton-siguiente').style.display = 'block';
+            };
+
+            window.responderChat = responderChat;
+            cargarTurno();
+            return {};
+        }
+
+        // Nivel 17: WORD BINGO
+        let fallingLetterInterval = null;
+        function inicializarWordBingo(nivel) {
+            let cartas = nivel.cartas;
+            let juegoActivo = true;
+
+            const juegoDinamico = document.getElementById('juego-dinamico');
+            juegoDinamico.innerHTML = `
+                <div id="bingo-area"></div>
+                <div id="letter-dropper">
+                    <span id="falling-letter" onclick="soltarLetra()">⭐</span>
+                </div>
+            `;
+            const bingoArea = document.getElementById('bingo-area');
+            const fallingLetter = document.getElementById('falling-letter');
+            
+            const dibujarCartas = () => {
+                bingoArea.innerHTML = '';
+                cartas.forEach((carta, cIndex) => {
+                    const cardDiv = document.createElement('div');
+                    cardDiv.className = 'bingo-card';
+                    cardDiv.innerHTML = `<h4>${carta.palabra}</h4><div class="word-grid" id="grid-${cIndex}"></div>`;
+                    const grid = cardDiv.querySelector('.word-grid');
+                    
+                    carta.palabra.split('').forEach((letra, lIndex) => {
+                        const box = document.createElement('div');
+                        box.className = 'letter-box';
+                        
+                        if (letra === ' ') box.style.backgroundColor = 'transparent';
+                        if (!carta.letrasFaltantes.includes(letra) && letra !== ' ') box.classList.add('filled');
+                        
+                        box.textContent = (letra === ' ') ? '' : (carta.letrasFaltantes.includes(letra) ? '' : letra);
+                        box.dataset.letter = letra;
+                        box.dataset.index = lIndex;
+                        box.dataset.cardIndex = cIndex;
+                        grid.appendChild(box);
+                    });
+                    
+                    bingoArea.appendChild(cardDiv);
+                    if (carta.completada) cardDiv.style.border = '3px solid var(--color-acierto)';
+                });
+            };
+
+            const generarLetra = () => {
+                if (!juegoActivo || cartas.every(c => c.completada)) return;
+                
+                const letrasDisponibles = [];
+                cartas.forEach(c => c.letrasFaltantes.forEach(l => {
+                    if (!letrasDisponibles.includes(l)) letrasDisponibles.push(l);
+                }));
+
+                if (letrasDisponibles.length === 0) return;
+
+                const letra = letrasDisponibles[Math.floor(Math.random() * letrasDisponibles.length)];
+                fallingLetter.textContent = letra;
+            };
+
+            const soltarLetra = () => {
+                if (!juegoActivo || fallingLetter.textContent === '⭐') return;
+
+                const letra = fallingLetter.textContent;
+                let acierto = false;
+
+                cartas.forEach(carta => {
+                    if (carta.completada) return;
+                    
+                    const index = carta.letrasFaltantes.indexOf(letra);
+                    if (index !== -1) {
+                        carta.letrasFaltantes.splice(index, 1);
+                        acierto = true;
+                        
+                        if (carta.letrasFaltantes.length === 0) {
+                            carta.completada = true;
+                            mostrarFeedback(`¡BINGO! ${carta.mensaje}`);
+                        }
+                    }
+                });
+
+                if (acierto) {
+                    mostrarFeedback(`¡Letra '${letra}' colocada!`);
+                } else {
+                    mostrarFeedback(`❌ Letra '${letra}' no necesaria.`);
+                }
+
+                fallingLetter.textContent = '⭐'; // Reset
+                dibujarCartas();
+                setTimeout(generarLetra, 1000);
+
+                if (cartas.every(c => c.completada)) {
+                    terminarWordBingo();
+                }
+            };
+            
+            const terminarWordBingo = () => {
+                juegoActivo = false;
+                mostrarFeedback(`¡Nivel ${nivel.id} COMPLETO! ${nivel.mensajeFinal}`);
+                document.getElementById('letter-dropper').style.display = 'none';
+                document.getElementById('boton-siguiente').textContent = 'Siguiente Nivel >>';
+                document.getElementById('boton-siguiente').onclick = avanzarNivel;
+                document.getElementById('boton-siguiente').style.display = 'block';
+            };
+
+            window.soltarLetra = soltarLetra;
+            dibujarCartas();
+            generarLetra();
+            fallingLetterInterval = setInterval(generarLetra, 2000); // Generar letra cada 2 segundos (opcional)
+
+            return {
+                limpiar: () => clearInterval(fallingLetterInterval)
+            };
+        }
+
+
+        // -------------------------------------------------------------
+        // INICIO DEL JUEGO
+        // -------------------------------------------------------------
+        document.addEventListener('DOMContentLoaded', () => {
+            // El botón global de avance ahora solo llama a la función de avance del juego activo
+            document.getElementById('boton-siguiente').onclick = () => {
+                 // Esta función será sobreescrita por los niveles que la necesiten,
+                 // pero por defecto, para el Quiz, llama a su función específica.
+                 if (juegosActivos.quiz && juegosActivos.quiz.avanzar) {
+                    juegosActivos.quiz.avanzar();
+                 } else {
+                    avanzarNivel(); // Esto es para placeholders o finales simples
+                 }
+            };
+            
+            // Cargar el juego en el Nivel 1
+            cargarNivel(nivelActual);
+        });
+    </script>
+</body>
+</html>
